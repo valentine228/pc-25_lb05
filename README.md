@@ -17,30 +17,18 @@
 ### Запуск серверов 1,2; запуск координатора; запуск клиентов 1,2 (порядок слева направо).
 <img width="1614" height="551" alt="image" src="https://github.com/user-attachments/assets/516c0b1f-ca20-478e-b85f-c1857eb6b1c6" />
 
-## Вариант 6
-def get_data():
-    try:
-        data = request.get_json().get('data')
-        if not data:
-            return {'error': 'Data not provided'}, 400
-        # Decrypt data
-        decrypted_data = decrypt_data(data)
-        # Process decrypted data
-        print(f"Decrypted data: {decrypted_data.decode()}")
-        return {'result': 'ok'}
-    except Exception as e:
-        return {'error': str(e)}, 400
+## Вариант 6 Реализация кэширования данных на сервере
+ - Добавьте в server.py кэширование данных, возвращаемых методом get_data().
+ - Модифицируйте client.py, чтобы он проверял кеш на сервере перед отправкой
+запроса. 
 
- --- Новый эндпоинт для получения кэшированных данных (НЕ требует аутентификацию)---
-@app.route('/api/get_cached_data', methods=['GET']) # Используем GET для получения данных
-def get_cached_data_endpoint():
-    data = get_cached_data_logic()
-    # Возвращаем JSON с результатом
-    return jsonify({'status': 'success', 'data': data})
 
- --- Опциональный эндпоинт для инвалидации кэша (может требовать аутентификацию или быть внутренним)---
- Для простоты сделаем его без аутентификации, но на практике это может быть защищено
-@app.route('/api/invalidate_cache', methods=['POST'])
-def post_invalidate_cache_endpoint():
-    invalidate_cache_logic()
-    return jsonify({'status': 'success', 'message': 'Cache invalidated on this server instance.'})
+Изменения в клиенте:
+Клиент будет отправлять GET-запрос к новому эндпоинту /api/get_cached_data через HTTP-соединение с координатором
+Изменения в сервере:
+Добавил кэширование и новый эндпоинт /api/get_cached_data.
+Изменения в координаторе: 
+координатор теперь умеет обрабатывать три эндпоинта:
+/api/data: Первоначальный эндпоинт для отправки зашифрованных данных с сертификатом. Перенаправляется на сервера с использованием mTLS.
+/api/get_cached_data: Новый эндпоинт для получения кэшированных данных. Перенаправляется на сервера с использованием mTLS, но сертификат клиента не передается в теле.
+/api/invalidate_cache: Новый эндпоинт для инвалидации кэша на всех серверах. Отправляет запросы на все серверы.
